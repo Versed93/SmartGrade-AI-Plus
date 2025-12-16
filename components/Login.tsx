@@ -16,6 +16,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [verificationCode, setVerificationCode] = useState('');
   const [username, setUsername] = useState('');
   
+  // Security Token (Stores the signed code from the server)
+  const [securityToken, setSecurityToken] = useState('');
+  
   // Login Data
   const [loginId, setLoginId] = useState(''); // Email or Username
 
@@ -26,34 +29,75 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   // UI State
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [devModeHint, setDevModeHint] = useState(false);
 
   // --- Actions ---
 
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
       if (!email.includes('@') || email.length < 5) {
           setError('Please enter a valid email address.');
           return;
       }
       setIsLoading(true);
       setError('');
-      // Simulate API call
-      setTimeout(() => {
-          setIsLoading(false);
+      setDevModeHint(false);
+
+      try {
+          const res = await fetch('/.netlify/functions/send-verification', {
+              method: 'POST',
+              body: JSON.stringify({ email }),
+              headers: { 'Content-Type': 'application/json' }
+          });
+          
+          const data = await res.json();
+
+          if (!res.ok) {
+              throw new Error(data.error || 'Failed to send code');
+          }
+
+          // Store the secure token for the next step
+          setSecurityToken(data.token);
+          
+          // If the backend is running without email keys, show the log hint
+          if (data.devMode) {
+              setDevModeHint(true);
+          }
+
           setStep('REGISTER_VERIFY');
-      }, 1000);
+      } catch (err: any) {
+          setError(err.message || 'Connection failed.');
+      } finally {
+          setIsLoading(false);
+      }
   };
 
-  const handleVerifyCode = () => {
-      if (verificationCode !== '123456') {
-          setError('Invalid verification code. (Hint: Use 123456)');
+  const handleVerifyCode = async () => {
+      if (verificationCode.length < 6) {
+          setError('Please enter the 6-digit code.');
           return;
       }
       setIsLoading(true);
       setError('');
-      setTimeout(() => {
-          setIsLoading(false);
+
+      try {
+          const res = await fetch('/.netlify/functions/verify-code', {
+              method: 'POST',
+              body: JSON.stringify({ email, code: verificationCode, token: securityToken }),
+              headers: { 'Content-Type': 'application/json' }
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+              throw new Error(data.error || 'Verification failed');
+          }
+
           setStep('REGISTER_USERNAME');
-      }, 800);
+      } catch (err: any) {
+          setError(err.message || 'Verification failed.');
+      } finally {
+          setIsLoading(false);
+      }
   };
 
   const handleCreateUsername = () => {
@@ -237,8 +281,16 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <div className="animate-fade-in">
                   <BackButton to="REGISTER_EMAIL" />
                   <h2 className="text-2xl font-bold text-slate-800 mb-2">Check your email</h2>
-                  <p className="text-slate-500 mb-8 text-sm">We've sent a code to <strong>{email}</strong></p>
+                  <p className="text-slate-500 mb-4 text-sm">We've sent a code to <strong>{email}</strong></p>
                   
+                  {devModeHint && (
+                      <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-xs text-yellow-800 mb-4">
+                          <strong>Demo Mode:</strong> The email system is not configured with SMTP keys. 
+                          <br />
+                          Check the <strong>Browser Console</strong> or <strong>Netlify Function Logs</strong> to see the generated code.
+                      </div>
+                  )}
+
                   <div className="space-y-4">
                       <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Verification Code</label>
@@ -248,10 +300,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                               onChange={(e) => setVerificationCode(e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, handleVerifyCode)}
                               className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none tracking-widest text-center text-lg"
-                              placeholder="123456"
+                              placeholder="XXXXXX"
                               autoFocus
                           />
-                          <p className="text-xs text-slate-400 mt-2 text-center">For demo purposes, use code: <strong>123456</strong></p>
                       </div>
                       {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
                       <button 
