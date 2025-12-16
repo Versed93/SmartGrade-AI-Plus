@@ -1,0 +1,5 @@
+{
+  "name": "SmartGrade AI+",
+  "description": "An AI-powered grading assistant for teachers. Create or generate rubrics, manage student lists, grade assignments with automatic calculations, and generate AI feedback.",
+  "requestFramePermissions": []
+}
