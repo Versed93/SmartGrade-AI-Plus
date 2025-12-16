@@ -101,6 +101,33 @@ function App() {
       setAssessments({});
   };
 
+  const handleDeleteAccount = () => {
+      const confirmDelete = window.confirm(
+          "Are you sure you want to permanently delete your account? This action cannot be undone and will delete all your rubrics, student lists, and grades."
+      );
+
+      if (confirmDelete) {
+          // 1. Remove user specific data
+          const storageKey = `smartgrade_data_${userId}`;
+          localStorage.removeItem(storageKey);
+
+          // 2. Remove user from simulated user database (if not Admin)
+          if (userId.toLowerCase() !== 'admin') {
+              const existingUsersStr = localStorage.getItem('smartgrade_users_db');
+              if (existingUsersStr) {
+                  const existingUsers = JSON.parse(existingUsersStr);
+                  // Filter out the user by username (userId stores the username)
+                  const updatedUsers = existingUsers.filter((u: any) => u.username !== userId);
+                  localStorage.setItem('smartgrade_users_db', JSON.stringify(updatedUsers));
+              }
+          }
+
+          // 3. Logout
+          handleLogout();
+          alert("Account deleted successfully.");
+      }
+  };
+
   const handleUpdateRubric = (updated: Rubric) => {
       setRubrics(prev => prev.map(r => r.id === updated.id ? updated : r));
   };
@@ -312,12 +339,20 @@ function App() {
                      <p className="text-xs text-slate-500 truncate">{userId}</p>
                  </div>
              </div>
-             <button 
-                onClick={handleLogout}
-                className="text-xs text-red-500 font-medium hover:underline flex items-center gap-1"
-             >
-                 Sign Out
-             </button>
+             <div className="flex justify-between items-center">
+                 <button 
+                    onClick={handleLogout}
+                    className="text-xs text-slate-500 font-medium hover:text-slate-800 hover:underline"
+                 >
+                     Sign Out
+                 </button>
+                 <button 
+                    onClick={handleDeleteAccount}
+                    className="text-xs text-red-400 font-medium hover:text-red-600 hover:underline"
+                 >
+                     Delete Account
+                 </button>
+             </div>
         </div>
       </nav>
 
