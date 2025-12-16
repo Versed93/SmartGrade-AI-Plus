@@ -1,7 +1,17 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { Rubric } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Lazy initialization to prevent app crash if API key is missing at load time
+let aiInstance: GoogleGenAI | null = null;
+
+const getAi = () => {
+  if (!aiInstance) {
+    // Fallback to empty string to prevent constructor error, API calls will fail gracefully later
+    const key = process.env.API_KEY || ''; 
+    aiInstance = new GoogleGenAI({ apiKey: key });
+  }
+  return aiInstance;
+}
 
 // Schema definitions for structured output
 const rubricSchema: Schema = {
@@ -103,7 +113,7 @@ export const generateRubricWithAI = async (
         prompt += `\n\nThe criteria must explicitly address the learning outcomes and the requirements in the brief.`;
     }
 
-    const response = await ai.models.generateContent({
+    const response = await getAi().models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
       config: {
@@ -129,7 +139,7 @@ export const extractRubricFromMedia = async (base64Data: string, mimeType: strin
   try {
     const prompt = "Analyze this document and extract the grading rubric into a structured JSON format. Identify the title, description, criteria, weight, and detailed performance levels (label, score, description) for each criterion.";
 
-    const response = await ai.models.generateContent({
+    const response = await getAi().models.generateContent({
       model: "gemini-2.5-flash",
       contents: {
         parts: [
@@ -160,7 +170,7 @@ export const extractSubmissionText = async (base64Data: string, mimeType: string
   try {
     const prompt = "Extract all readable text from this document. Return only the text content.";
 
-    const response = await ai.models.generateContent({
+    const response = await getAi().models.generateContent({
       model: "gemini-2.5-flash",
       contents: {
         parts: [
@@ -194,7 +204,7 @@ export const generateFeedbackWithAI = async (
     
     Keep the tone professional yet supportive. Address the student directly (2nd person). Limit to 100 words.`;
 
-    const response = await ai.models.generateContent({
+    const response = await getAi().models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
     });
@@ -230,7 +240,7 @@ export const autoGradeWithAI = async (
     
     For each criterion, select the Level Label that best matches the submission quality. Provide a brief explanation. Also provide overall feedback.`;
 
-    const response = await ai.models.generateContent({
+    const response = await getAi().models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
       config: {
