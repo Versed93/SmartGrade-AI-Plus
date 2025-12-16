@@ -30,6 +30,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [devModeHint, setDevModeHint] = useState(false);
+  const [demoCode, setDemoCode] = useState('');
 
   // --- Actions ---
 
@@ -41,6 +42,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setIsLoading(true);
       setError('');
       setDevModeHint(false);
+      setDemoCode('');
 
       try {
           const res = await fetch('/.netlify/functions/send-verification', {
@@ -61,6 +63,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           // If the backend is running without email keys, show the log hint
           if (data.devMode) {
               setDevModeHint(true);
+              if (data.previewCode) {
+                setDemoCode(data.previewCode);
+              }
           }
 
           setStep('REGISTER_VERIFY');
@@ -284,10 +289,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <p className="text-slate-500 mb-4 text-sm">We've sent a code to <strong>{email}</strong></p>
                   
                   {devModeHint && (
-                      <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-xs text-yellow-800 mb-4">
+                      <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-xs text-yellow-800 mb-4 animate-pulse">
                           <strong>Demo Mode:</strong> The email system is not configured with SMTP keys. 
                           <br />
-                          Check the <strong>Browser Console</strong> or <strong>Netlify Function Logs</strong> to see the generated code.
+                          {demoCode && (
+                            <div className="mt-2 p-2 bg-white border border-yellow-100 rounded text-center">
+                                Use this code: <span className="font-mono font-bold text-lg select-all text-blue-600">{demoCode}</span>
+                            </div>
+                          )}
+                          {!demoCode && "Check the Netlify Function Logs to see the generated code."}
                       </div>
                   )}
 

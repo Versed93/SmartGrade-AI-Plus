@@ -64,6 +64,7 @@ const handler: Handler = async (event, context) => {
       body: JSON.stringify({ 
         message: "Code sent", 
         devMode: !SMTP_USER, // Frontend can use this to show a hint if needed
+        previewCode: !SMTP_USER ? code : null, // Send code to frontend ONLY in dev mode
         token: token 
       }),
     };
