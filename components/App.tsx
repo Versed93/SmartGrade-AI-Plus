@@ -342,16 +342,31 @@ function App() {
       
       {/* Navigation Sidebar */}
       <nav className="bg-white border-b md:border-b-0 md:border-r border-slate-200 w-full md:w-64 flex-shrink-0 flex flex-col p-4 z-10">
-        <div className="mb-8 px-2 flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-sm flex items-center justify-center text-white">
-                <Icon.Logo className="w-5 h-5" />
+        
+        {/* Header: Logo & Mobile Profile Actions */}
+        <div className="flex justify-between items-center mb-4 md:mb-8 px-2">
+            <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-sm flex items-center justify-center text-white">
+                    <Icon.Logo className="w-5 h-5" />
+                </div>
+                <h1 className="text-xl font-bold tracking-tight text-slate-800">
+                SmartGrade AI<span className="text-blue-600 text-sm align-top relative -top-0.5">+</span>
+                </h1>
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-800">
-              SmartGrade AI<span className="text-blue-600 text-sm align-top relative -top-0.5">+</span>
-            </h1>
+
+            {/* Mobile Actions */}
+            <div className="md:hidden flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs border border-slate-200">
+                     {userName.charAt(0)}
+                 </div>
+                 <button onClick={handleLogout} className="text-slate-400 hover:text-red-500">
+                    <Icon.XMark className="w-6 h-6" />
+                 </button>
+            </div>
         </div>
         
-        <div className="flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
+        {/* Navigation Items */}
+        <div className="flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 scrollbar-hide">
           <NavButton view={AppView.DASHBOARD} label="Overview" icon={<Icon.DocumentText />} />
           
           {userRole === 'TEACHER' && (
@@ -366,7 +381,8 @@ function App() {
           <NavButton view={AppView.EXPORT} label="Results" icon={<Icon.Download />} />
         </div>
 
-        <div className="mt-auto pt-8 px-4 border-t border-slate-100">
+        {/* Desktop Footer (Profile) */}
+        <div className="hidden md:block mt-auto pt-8 px-4 border-t border-slate-100">
              <div className="flex items-center gap-3 mb-4">
                  <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold">
                      {userName.charAt(0)}

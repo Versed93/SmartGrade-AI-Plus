@@ -198,8 +198,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
-      <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative md:min-h-[600px]">
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans overflow-y-auto">
+      <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative md:min-h-[600px] my-4 md:my-0">
         
         {/* Left Side - Brand */}
         <div className="w-full md:w-1/2 bg-gradient-to-br from-blue-600 to-purple-700 p-6 md:p-12 text-white flex flex-col justify-between relative overflow-hidden shrink-0">
@@ -457,45 +457,38 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
              </div>
           )}
           
-          {/* TEACHER PASSCODE OVERLAY */}
+          {/* TEACHER PASSCODE (Standard Relative Flow for Mobile Stability) */}
           {step === 'PASSCODE' && (
-              <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex items-center justify-center p-6 md:p-8 rounded-b-3xl md:rounded-r-3xl animate-fade-in">
-                  <div className="w-full max-w-sm">
-                      <div className="text-center mb-6">
-                          <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                                <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd" />
-                              </svg>
-                          </div>
-                          <h3 className="text-xl font-bold text-slate-800">Enter Access Code</h3>
-                          <p className="text-sm text-slate-500">Security verification for {selectedRole?.label}</p>
+              <div className="animate-fade-in">
+                  <BackButton to="ROLE_SELECT" />
+                  <div className="text-center mb-6">
+                      <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                            <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd" />
+                          </svg>
                       </div>
+                      <h3 className="text-xl font-bold text-slate-800">Enter Access Code</h3>
+                      <p className="text-sm text-slate-500">Security verification for {selectedRole?.label}</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                      <input 
+                          type="password"
+                          autoFocus
+                          value={passcode}
+                          onChange={(e) => setPasscode(e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, verifyPasscode)}
+                          placeholder="Access Code"
+                          className="w-full text-center text-2xl tracking-widest p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                      {error && <p className="text-red-500 text-center text-sm font-bold">{error}</p>}
                       
-                      <div className="space-y-4">
-                          <input 
-                              type="password"
-                              autoFocus
-                              value={passcode}
-                              onChange={(e) => setPasscode(e.target.value)}
-                              onKeyDown={(e) => handleKeyDown(e, verifyPasscode)}
-                              placeholder="Access Code"
-                              className="w-full text-center text-2xl tracking-widest p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                          />
-                          {error && <p className="text-red-500 text-center text-sm font-bold">{error}</p>}
-                          
-                          <button 
-                              onClick={verifyPasscode}
-                              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
-                          >
-                              Verify
-                          </button>
-                          <button 
-                              onClick={() => { setStep('ROLE_SELECT'); setPasscode(''); setError(''); }}
-                              className="w-full text-slate-400 hover:text-slate-600 text-sm font-medium"
-                          >
-                              Cancel
-                          </button>
-                      </div>
+                      <button 
+                          onClick={verifyPasscode}
+                          className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                      >
+                          Verify
+                      </button>
                   </div>
               </div>
           )}
