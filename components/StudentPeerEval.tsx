@@ -84,7 +84,7 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
   const handleSearch = () => {
     setSearchError('');
     if (!searchQuery.trim()) {
-        setSearchError('Please enter a Group Number or Student ID');
+        setSearchError('Please enter your Student ID to log in.');
         return;
     }
 
@@ -112,7 +112,7 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
         return;
     }
 
-    // 2. Fallback: Check if query matches a Group ID or Name
+    // 2. Fallback: Check if query matches a Group ID or Name (Group Login)
     const groupMatch = groups.find(g => g.id.toLowerCase() === query || g.name.toLowerCase() === query);
     if (groupMatch) {
         setSelectedGroupId(groupMatch.id);
@@ -122,7 +122,8 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
         return;
     }
 
-    setSearchError('No group or student found. Please check your spelling.');
+    // If we reach here, neither student nor group was found in the roster
+    setSearchError('ID not found in student list. Please check your spelling.');
   };
 
   const handleVerification = () => {
@@ -479,8 +480,8 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
                  <Icon.Users />
              </div>
              <div>
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Verify Student ID</h2>
-                <p className="text-slate-500">Please identify yourself to proceed with the evaluation.</p>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">Student Login</h2>
+                <p className="text-slate-500">Please enter your Student ID to continue.</p>
              </div>
              
              <div className="space-y-4">
@@ -489,7 +490,7 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    placeholder="Enter Student ID or Group Name"
+                    placeholder="Enter Student ID"
                     className="w-full text-center text-lg p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
                     autoFocus
                  />
@@ -500,7 +501,7 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
                     onClick={handleSearch}
                     className="w-full bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 transition-colors shadow-lg shadow-purple-200"
                  >
-                    Next
+                    Verify & Login
                  </button>
              </div>
           </div>
