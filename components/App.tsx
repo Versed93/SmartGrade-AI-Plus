@@ -23,8 +23,11 @@ const INITIAL_RUBRIC: Rubric = {
 
 function App() {
   // Check URL params for Student Mode
-  const urlParams = new URLSearchParams(window.location.search);
-  const isStudentMode = urlParams.get('mode') === 'student';
+  // We use a robust check for 'mode' parameter
+  const getUrlParams = () => new URLSearchParams(window.location.search);
+  const urlParams = getUrlParams();
+  const modeParam = urlParams.get('mode');
+  const isStudentMode = modeParam?.toLowerCase() === 'student';
   const paramTeacherId = urlParams.get('tId');
   const paramRubricId = urlParams.get('rId');
 
@@ -43,6 +46,18 @@ function App() {
   const [assessments, setAssessments] = useState<Record<string, Assessment>>({});
 
   const rubric = rubrics.find(r => r.id === currentRubricId) || INITIAL_RUBRIC;
+
+  // Effect to reinforce student mode if URL params are present (handles potential mounting race conditions)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'student' && userRole !== 'STUDENT') {
+        setUserRole('STUDENT');
+        setUserName('Student Guest');
+        setUserId(params.get('tId') || 'guest');
+        setCurrentView(AppView.PEER_KIOSK);
+        if (params.get('rId')) setCurrentRubricId(params.get('rId')!);
+    }
+  }, [userRole]);
   
   // Load data logic:
   // 1. If Normal User: Load from their own storage key
@@ -51,11 +66,14 @@ function App() {
     // Determine the key to load from
     let storageKey = '';
     
-    if (userRole === 'STUDENT' && paramTeacherId) {
+    // Refresh params to be sure
+    const currentTId = isStudentMode ? paramTeacherId : null;
+    
+    if (userRole === 'STUDENT' && currentTId) {
         // Load teacher's data for the student to view
-        storageKey = `smartgrade_data_${paramTeacherId}`;
-    } else if (userId) {
-        // Load own data
+        storageKey = `smartgrade_data_${currentTId}`;
+    } else if (userId && !isStudentMode) {
+        // Load own data (Teacher/Assessor)
         storageKey = `smartgrade_data_${userId}`;
     }
 
@@ -85,7 +103,7 @@ function App() {
             }
         }
     }
-  }, [userRole, userId, paramTeacherId, paramRubricId]);
+  }, [userRole, userId, paramTeacherId, paramRubricId, isStudentMode]);
 
   // Persist data whenever it changes
   useEffect(() => {

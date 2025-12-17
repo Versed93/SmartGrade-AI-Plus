@@ -311,8 +311,7 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
   };
 
   // QR Code URL (Points to current page with connection params)
-  const baseUrl = window.location.href.split('?')[0];
-  const qrUrlData = `${baseUrl}?mode=student&tId=${hostUserId}&rId=${rubric.id}`;
+  const qrUrlData = `${window.location.origin}${window.location.pathname}?mode=student&tId=${hostUserId || ''}&rId=${rubric.id}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrUrlData)}`;
 
   // Teacher Monitor View Component
@@ -480,7 +479,7 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
                  <Icon.Users />
              </div>
              <div>
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Student Login</h2>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">Peer Evaluation Login</h2>
                 <p className="text-slate-500">Please enter your Student ID to continue.</p>
              </div>
              
