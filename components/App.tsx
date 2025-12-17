@@ -28,10 +28,12 @@ function App() {
   const paramTeacherId = urlParams.get('tId');
   const paramRubricId = urlParams.get('rId');
 
+  // Initialize role based on URL to bypass login if student
   const [userRole, setUserRole] = useState<UserRole | null>(isStudentMode ? 'STUDENT' : null);
   const [userName, setUserName] = useState<string>(isStudentMode ? 'Student Guest' : '');
-  const [userId, setUserId] = useState<string>(isStudentMode ? (paramTeacherId || 'guest') : ''); // In student mode, use teacher ID for data key
+  const [userId, setUserId] = useState<string>(isStudentMode ? (paramTeacherId || 'guest') : ''); 
 
+  // If student mode, default to PEER_KIOSK view
   const [currentView, setCurrentView] = useState<AppView>(isStudentMode ? AppView.PEER_KIOSK : AppView.DASHBOARD);
   
   // State Initialization
@@ -42,10 +44,22 @@ function App() {
 
   const rubric = rubrics.find(r => r.id === currentRubricId) || INITIAL_RUBRIC;
   
-  // Load data on mount if in Student Mode
+  // Load data logic:
+  // 1. If Normal User: Load from their own storage key
+  // 2. If Student Guest: Load from the TEACHER'S storage key (read-only mostly, but writes assessments)
   useEffect(() => {
-    if (isStudentMode && paramTeacherId) {
-        const storageKey = `smartgrade_data_${paramTeacherId}`;
+    // Determine the key to load from
+    let storageKey = '';
+    
+    if (userRole === 'STUDENT' && paramTeacherId) {
+        // Load teacher's data for the student to view
+        storageKey = `smartgrade_data_${paramTeacherId}`;
+    } else if (userId) {
+        // Load own data
+        storageKey = `smartgrade_data_${userId}`;
+    }
+
+    if (storageKey) {
         const savedData = localStorage.getItem(storageKey);
         if (savedData) {
             try {
@@ -53,38 +67,36 @@ function App() {
                 setRubrics(parsed.rubrics || [INITIAL_RUBRIC]);
                 setAssignees(parsed.assignees || []);
                 setAssessments(parsed.assessments || {});
+                
+                // If specific rubric requested via URL, try to set it
                 if (paramRubricId) {
-                    setCurrentRubricId(paramRubricId);
+                   // Verify it exists in loaded data
+                   const exists = parsed.rubrics?.find((r: Rubric) => r.id === paramRubricId);
+                   if (exists) {
+                       setCurrentRubricId(paramRubricId);
+                   } else {
+                       setCurrentRubricId(parsed.currentRubricId || INITIAL_RUBRIC.id);
+                   }
                 } else {
                     setCurrentRubricId(parsed.currentRubricId || (parsed.rubrics ? parsed.rubrics[0].id : INITIAL_RUBRIC.id));
                 }
             } catch (e) {
-                console.error("Failed to load teacher data for student", e);
+                console.error("Failed to load data", e);
             }
         }
     }
-  }, [isStudentMode, paramTeacherId, paramRubricId]);
+  }, [userRole, userId, paramTeacherId, paramRubricId]);
 
-  // Persist data whenever it changes, if a user is logged in (AND not a student guest)
+  // Persist data whenever it changes
   useEffect(() => {
-    if (userId && userRole !== 'STUDENT') {
-        const storageKey = `smartgrade_data_${userId}`;
-        const dataToSave = {
-            rubrics,
-            assignees,
-            assessments,
-            currentRubricId
-        };
-        localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-    } else if (userRole === 'STUDENT' && paramTeacherId) {
-        // OPTIONAL: If we want student submissions to save to the Teacher's storage key on the SAME device (Kiosk mode)
-        // We can enable this. For cross-device without backend, this won't persist to teacher, but allows the UI to function.
-        const storageKey = `smartgrade_data_${paramTeacherId}`;
-        // We only want to save assessments, carefully merging
-        // For safety in this demo, we won't overwrite the whole teacher DB from the student view
-        // to prevent data loss if state desyncs. 
-        // Real implementation requires a backend.
-        // However, to make the "Submit" button work in the demo:
+    // Only save if we have a valid user context
+    if (userId) {
+        // If student, we technically want to save back to teacher's key (Shared device/Simulated Backend)
+        // OR save to a temp key if we don't want to overwrite teacher config.
+        // For this demo to work (student submits -> teacher sees), we must write to teacher key.
+        const targetId = (userRole === 'STUDENT' && paramTeacherId) ? paramTeacherId : userId;
+        const storageKey = `smartgrade_data_${targetId}`;
+        
         const dataToSave = {
             rubrics,
             assignees,
@@ -97,10 +109,10 @@ function App() {
 
   const handleLogin = (role: UserRole, label: string, email: string) => {
       setUserRole(role);
-      setUserName(label); // Display Name (Role Label)
-      setUserId(email);   // Storage Key
+      setUserName(label);
+      setUserId(email);
 
-      // Attempt to load data for this specific user
+      // Explicit load on login
       const storageKey = `smartgrade_data_${email}`;
       const savedData = localStorage.getItem(storageKey);
 
@@ -112,22 +124,15 @@ function App() {
               setAssessments(parsed.assessments || {});
               setCurrentRubricId(parsed.currentRubricId || (parsed.rubrics ? parsed.rubrics[0].id : INITIAL_RUBRIC.id));
           } catch (e) {
-              console.error("Failed to load user data", e);
-              // Fallback to defaults if corrupt
               setRubrics([INITIAL_RUBRIC]);
-              setAssignees([]);
-              setAssessments({});
-              setCurrentRubricId(INITIAL_RUBRIC.id);
           }
       } else {
-          // New User or No Data found: Start Fresh
           setRubrics([INITIAL_RUBRIC]);
           setAssignees([]);
           setAssessments({});
           setCurrentRubricId(INITIAL_RUBRIC.id);
       }
 
-      // Determine default view based on role
       if (role === 'ASSESSOR') {
           setCurrentView(AppView.GRADING);
       } else {
@@ -136,14 +141,13 @@ function App() {
   };
 
   const handleLogout = () => {
-      // Clear URL params
+      // Clear URL params to exit student mode cleanly
       window.history.pushState({}, '', window.location.pathname);
       
       setUserRole(null);
       setUserName('');
       setUserId('');
       setCurrentView(AppView.DASHBOARD);
-      // Clear sensitive state from memory on logout
       setRubrics([INITIAL_RUBRIC]);
       setAssignees([]);
       setAssessments({});
@@ -155,22 +159,17 @@ function App() {
       );
 
       if (confirmDelete) {
-          // 1. Remove user specific data
           const storageKey = `smartgrade_data_${userId}`;
           localStorage.removeItem(storageKey);
 
-          // 2. Remove user from simulated user database (if not Admin)
           if (userId.toLowerCase() !== 'admin') {
               const existingUsersStr = localStorage.getItem('smartgrade_users_db');
               if (existingUsersStr) {
                   const existingUsers = JSON.parse(existingUsersStr);
-                  // Filter out the user by username (userId stores the username)
                   const updatedUsers = existingUsers.filter((u: any) => u.username !== userId);
                   localStorage.setItem('smartgrade_users_db', JSON.stringify(updatedUsers));
               }
           }
-
-          // 3. Logout
           handleLogout();
           alert("Account deleted successfully.");
       }
@@ -185,8 +184,8 @@ function App() {
           ...INITIAL_RUBRIC,
           id: crypto.randomUUID(),
           title: `Assignment ${rubrics.length + 1}`,
-          subject: rubric.subject, // Inherit subject code
-          plos: rubric.plos, // Inherit PLOs/CLOs potentially useful
+          subject: rubric.subject,
+          plos: rubric.plos,
           clos: rubric.clos,
           type: 'individual'
       };
@@ -209,7 +208,6 @@ function App() {
   };
 
   const handleDeleteSubject = (subjectKey: string) => {
-      // Find all rubrics that match this subject key (Group Logic from SubjectAssignment)
       const rubricsInSubject = rubrics.filter(r => {
            const key = r.subject && r.subject.trim() ? r.subject.trim().toUpperCase() : 'NO SUBJECT';
            return key === subjectKey;
@@ -224,10 +222,7 @@ function App() {
           const idsToDelete = new Set(rubricsInSubject.map(r => r.id));
           const newRubrics = rubrics.filter(r => !idsToDelete.has(r.id));
           setRubrics(newRubrics);
-          
-          // Determine new current ID if the current one was deleted
           if (idsToDelete.has(currentRubricId)) {
-             // pick first available
              if (newRubrics.length > 0) {
                  setCurrentRubricId(newRubrics[0].id);
              }
@@ -249,8 +244,6 @@ function App() {
           setCurrentView(AppView.RUBRIC_EDITOR);
       }
   };
-
-  // --- Data Export/Import Logic ---
 
   const handleExportData = () => {
     const data = {
@@ -282,13 +275,10 @@ function App() {
       reader.onload = (event) => {
           try {
               const json = JSON.parse(event.target?.result as string);
-              
-              // Basic Validation
               if (!json.rubrics || !Array.isArray(json.rubrics)) {
                   alert("Invalid backup file format. Missing rubrics data.");
                   return;
               }
-
               if (confirm(`Restore data from ${json.metadata?.exportedAt ? new Date(json.metadata.exportedAt).toLocaleString() : 'unknown date'}? This will overwrite your current ${assignees.length} students and ${rubrics.length} assignments.`)) {
                   setRubrics(json.rubrics);
                   setAssignees(json.assignees || []);
@@ -302,7 +292,6 @@ function App() {
           }
       };
       reader.readAsText(file);
-      // Reset input so same file can be selected again if needed
       e.target.value = '';
   };
 
@@ -324,9 +313,7 @@ function App() {
     );
   };
 
-  // Dashboard Calculations
   const totalStudents = assignees.length;
-  // Count graded students for THIS assignment only
   const gradedStudents = assignees.filter(a => assessments[`${rubric.id}_${a.id}`]).length;
   const progressPercentage = totalStudents > 0 ? (gradedStudents / totalStudents) * 100 : 0;
 
@@ -335,7 +322,7 @@ function App() {
       return <Login onLogin={handleLogin} />;
   }
 
-  // Separate view handling for Full Screen Student Mode
+  // Full Screen Student View
   if (currentView === AppView.PEER_KIOSK) {
     return (
       <StudentPeerEval 
@@ -353,7 +340,7 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row font-sans text-slate-900">
       
-      {/* Navigation Sidebar / Topbar */}
+      {/* Navigation Sidebar */}
       <nav className="bg-white border-b md:border-b-0 md:border-r border-slate-200 w-full md:w-64 flex-shrink-0 flex flex-col p-4 z-10">
         <div className="mb-8 px-2 flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-sm flex items-center justify-center text-white">
@@ -406,7 +393,7 @@ function App() {
         </div>
       </nav>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen">
         <div className="max-w-6xl mx-auto">
             {currentView === AppView.DASHBOARD && (
@@ -419,8 +406,6 @@ function App() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        
-                        {/* Subject Assignment Card - Teacher Only */}
                         {userRole === 'TEACHER' && (
                              <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative overflow-hidden group" onClick={() => setCurrentView(AppView.SUBJECT_ASSIGNMENT)}>
                                 <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-600 group-hover:text-white transition-colors"><Icon.DocumentText /></div>
@@ -442,7 +427,6 @@ function App() {
                             <p className="text-slate-500 text-sm">{rubric.criteria.length > 0 ? `${rubric.criteria.length} Criteria defined` : (userRole === 'TEACHER' ? 'Create or generate rubrics' : 'No rubric defined')}</p>
                         </div>
                         
-                        {/* Student List - Available to all, but view-only for Assessors */}
                         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setCurrentView(AppView.ASSIGNEES)}>
                             <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-4"><Icon.Users /></div>
                             <h3 className="font-bold text-lg mb-1">Student List</h3>
@@ -467,7 +451,6 @@ function App() {
                             </p>
                         </div>
                         
-                        {/* Peer Eval Mode - Teacher Only */}
                         {userRole === 'TEACHER' && (
                         <div className="md:col-span-2 lg:col-span-4 bg-white p-6 rounded-xl border border-purple-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group flex items-center justify-between" onClick={() => setCurrentView(AppView.PEER_KIOSK)}>
                             <div>
@@ -479,7 +462,6 @@ function App() {
                         )}
                     </div>
                     
-                    {/* DATA MANAGEMENT SECTION - TEACHER ONLY */}
                     {userRole === 'TEACHER' && (
                     <div className="mt-8 pt-8 border-t border-slate-200">
                         <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">

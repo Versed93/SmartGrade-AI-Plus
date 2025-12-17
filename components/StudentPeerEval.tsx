@@ -34,7 +34,8 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
     isGuest = false 
 }) => {
   const [mode, setMode] = useState<Mode>(isGuest ? 'STUDENT_MODE' : 'TEACHER_MODE');
-  const [step, setStep] = useState<'KIOSK_START' | 'SEARCH' | 'SELECT_SELF' | 'EVALUATE' | 'SUCCESS'>('KIOSK_START');
+  // If guest, skip landing and go straight to search
+  const [step, setStep] = useState<'KIOSK_START' | 'SEARCH' | 'SELECT_SELF' | 'EVALUATE' | 'SUCCESS'>(isGuest ? 'SEARCH' : 'KIOSK_START');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchError, setSearchError] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -47,7 +48,6 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
   // Store detailed answers per teammate
   const [evalForms, setEvalForms] = useState<Record<string, EvaluationForm>>({});
 
-  // Effect to auto-start if guest
   useEffect(() => {
     if (isGuest) {
         setMode('STUDENT_MODE');
