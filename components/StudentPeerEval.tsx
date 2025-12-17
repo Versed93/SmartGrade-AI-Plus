@@ -311,7 +311,15 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
   };
 
   // QR Code URL (Points to current page with connection params)
-  const qrUrlData = `${window.location.origin}${window.location.pathname}?mode=student&tId=${hostUserId || ''}&rId=${rubric.id}`;
+  const origin = window.location.origin;
+  const path = window.location.pathname;
+  // Construct parameters manually to ensure encoding of values
+  const params = new URLSearchParams();
+  params.append('mode', 'student');
+  params.append('tId', hostUserId || '');
+  params.append('rId', rubric.id);
+  
+  const qrUrlData = `${origin}${path}?${params.toString()}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrUrlData)}`;
 
   // Teacher Monitor View Component

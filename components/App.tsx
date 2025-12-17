@@ -69,7 +69,7 @@ function App() {
     // Refresh params to be sure
     const currentTId = isStudentMode ? paramTeacherId : null;
     
-    if (userRole === 'STUDENT' && currentTId) {
+    if ((userRole === 'STUDENT' || isStudentMode) && currentTId) {
         // Load teacher's data for the student to view
         storageKey = `smartgrade_data_${currentTId}`;
     } else if (userId && !isStudentMode) {
@@ -112,7 +112,7 @@ function App() {
         // If student, we technically want to save back to teacher's key (Shared device/Simulated Backend)
         // OR save to a temp key if we don't want to overwrite teacher config.
         // For this demo to work (student submits -> teacher sees), we must write to teacher key.
-        const targetId = (userRole === 'STUDENT' && paramTeacherId) ? paramTeacherId : userId;
+        const targetId = ((userRole === 'STUDENT' || isStudentMode) && paramTeacherId) ? paramTeacherId : userId;
         const storageKey = `smartgrade_data_${targetId}`;
         
         const dataToSave = {
@@ -123,7 +123,7 @@ function App() {
         };
         localStorage.setItem(storageKey, JSON.stringify(dataToSave));
     }
-  }, [rubrics, assignees, assessments, currentRubricId, userId, userRole, paramTeacherId]);
+  }, [rubrics, assignees, assessments, currentRubricId, userId, userRole, paramTeacherId, isStudentMode]);
 
   const handleLogin = (role: UserRole, label: string, email: string) => {
       setUserRole(role);
@@ -335,6 +335,22 @@ function App() {
   const gradedStudents = assignees.filter(a => assessments[`${rubric.id}_${a.id}`]).length;
   const progressPercentage = totalStudents > 0 ? (gradedStudents / totalStudents) * 100 : 0;
 
+  // IMPORTANT: Direct failsafe for Student Mode
+  // If params say student mode, render the student view regardless of state latency
+  if (isStudentMode && !userRole) {
+      return (
+        <StudentPeerEval 
+            assignees={assignees} 
+            assessments={assessments} 
+            rubric={rubric} 
+            onSaveAssessment={handleUpdateAssessment}
+            onExit={handleLogout}
+            hostUserId={paramTeacherId || ''}
+            isGuest={true}
+        />
+      );
+  }
+
   // Render Login if not authenticated
   if (!userRole) {
       return <Login onLogin={handleLogin} />;
@@ -347,12 +363,12 @@ function App() {
         assignees={assignees} 
         assessments={assessments} 
         rubric={rubric} 
-        onSaveAssessment={handleUpdateAssessment}
-        onExit={handleLogout}
-        hostUserId={userId}
-        isGuest={userRole === 'STUDENT'}
-      />
-    );
+        onSaveAssessment={handleUpdateAssessment} 
+        onExit={handleLogout} 
+        hostUserId={userId} 
+        isGuest={userRole === 'STUDENT'} 
+      /> 
+    ); 
   }
 
   return (
