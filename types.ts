@@ -77,4 +77,4 @@ export enum AppView {
   PEER_KIOSK = 'PEER_KIOSK'
 }
 
-export type UserRole = 'TEACHER' | 'ASSESSOR';
+export type UserRole = 'TEACHER' | 'ASSESSOR' | 'STUDENT';

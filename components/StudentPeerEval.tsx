@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Assignee, Assessment, PeerEvaluation, Rubric } from '../types';
 import { Icon } from './Icon';
 
@@ -8,6 +8,8 @@ interface StudentPeerEvalProps {
   rubric: Rubric;
   onSaveAssessment: (id: string, assessment: Assessment) => void;
   onExit: () => void;
+  hostUserId?: string;
+  isGuest?: boolean;
 }
 
 // Extended questionnaire form state
@@ -22,8 +24,16 @@ interface EvaluationForm {
 
 type Mode = 'STUDENT_MODE' | 'TEACHER_MODE';
 
-export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({ assignees, assessments, rubric, onSaveAssessment, onExit }) => {
-  const [mode, setMode] = useState<Mode>('STUDENT_MODE');
+export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({ 
+    assignees, 
+    assessments, 
+    rubric, 
+    onSaveAssessment, 
+    onExit, 
+    hostUserId, 
+    isGuest = false 
+}) => {
+  const [mode, setMode] = useState<Mode>(isGuest ? 'STUDENT_MODE' : 'TEACHER_MODE');
   const [step, setStep] = useState<'KIOSK_START' | 'SEARCH' | 'SELECT_SELF' | 'EVALUATE' | 'SUCCESS'>('KIOSK_START');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchError, setSearchError] = useState('');
@@ -36,6 +46,14 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({ assignees, ass
   
   // Store detailed answers per teammate
   const [evalForms, setEvalForms] = useState<Record<string, EvaluationForm>>({});
+
+  // Effect to auto-start if guest
+  useEffect(() => {
+    if (isGuest) {
+        setMode('STUDENT_MODE');
+        setStep('SEARCH');
+    }
+  }, [isGuest]);
 
   const groups = assignees.filter(a => a.type === 'group');
   const selectedGroup = groups.find(g => g.id === selectedGroupId);
@@ -209,7 +227,7 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({ assignees, ass
   };
 
   const reset = () => {
-    setStep('KIOSK_START');
+    setStep(isGuest ? 'SEARCH' : 'KIOSK_START');
     setSearchQuery('');
     setSearchError('');
     setSelectedGroupId(null);
@@ -291,8 +309,10 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({ assignees, ass
     );
   };
 
-  // QR Code URL (Points to current page)
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.href)}`;
+  // QR Code URL (Points to current page with connection params)
+  const baseUrl = window.location.href.split('?')[0];
+  const qrUrlData = `${baseUrl}?mode=student&tId=${hostUserId}&rId=${rubric.id}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrUrlData)}`;
 
   // Teacher Monitor View Component
   const TeacherMonitor = () => {
@@ -396,8 +416,8 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({ assignees, ass
                     <h1 className="font-bold text-slate-800 text-lg hidden sm:block">Peer Eval</h1>
                 </div>
                 
-                {/* Mode Switcher */}
-                {step === 'KIOSK_START' && (
+                {/* Mode Switcher - Only visible if not in Guest Mode */}
+                {!isGuest && step === 'KIOSK_START' && (
                     <div className="bg-slate-100 p-1 rounded-lg flex items-center">
                         <button 
                             onClick={() => setMode('STUDENT_MODE')}
@@ -414,8 +434,8 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({ assignees, ass
                     </div>
                 )}
             </div>
-            <button onClick={() => step === 'KIOSK_START' ? onExit() : reset()} className="text-sm text-slate-500 hover:text-red-600 font-medium px-2">
-             {step === 'KIOSK_START' ? 'Exit App' : 'Cancel Session'}
+            <button onClick={() => step === 'KIOSK_START' && !isGuest ? onExit() : reset()} className="text-sm text-slate-500 hover:text-red-600 font-medium px-2">
+             {(step === 'KIOSK_START' && !isGuest) ? 'Exit App' : (isGuest ? 'Reset' : 'Cancel Session')}
             </button>
       </div>
 
@@ -426,24 +446,28 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({ assignees, ass
             <TeacherMonitor />
         )}
 
-        {/* STUDENT MODE: QR Landing */}
-        {mode === 'STUDENT_MODE' && step === 'KIOSK_START' && (
+        {/* STUDENT MODE: QR Landing (Teacher View) */}
+        {!isGuest && mode === 'STUDENT_MODE' && step === 'KIOSK_START' && (
             <div className="bg-white p-12 rounded-3xl shadow-xl border border-slate-200 text-center max-w-lg w-full relative overflow-hidden animate-fade-in">
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-purple-600"></div>
                 <div className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-800 mb-2">Join Peer Evaluation</h2>
-                    <p className="text-slate-500">Scan the QR code to start evaluating your team.</p>
+                    <p className="text-slate-500">Scan the QR code to verify ID and start.</p>
                 </div>
                 
-                <div className="bg-slate-50 p-6 rounded-2xl inline-block mb-8 border border-slate-100">
-                    <img src={qrUrl} alt="Scan to Evaluate" className="w-48 h-48 mix-blend-multiply" />
+                <div className="bg-slate-50 p-6 rounded-2xl inline-block mb-8 border border-slate-100 relative">
+                    <img src={qrUrl} alt="Scan to Evaluate" className="w-56 h-56 mix-blend-multiply" />
                 </div>
+                
+                <p className="text-xs text-slate-400 mb-6 max-w-xs mx-auto">
+                    Students can scan this code with their phones to access the evaluation form directly without logging in.
+                </p>
 
                 <button 
                     onClick={startStudentMode}
                     className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
-                    Open Student Interface
+                    Test on this Device
                 </button>
             </div>
         )}
@@ -455,8 +479,8 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({ assignees, ass
                  <Icon.Users />
              </div>
              <div>
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Identify Yourself</h2>
-                <p className="text-slate-500">Enter your <strong>Student ID</strong> (Recommended) or Group Number.</p>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">Verify Student ID</h2>
+                <p className="text-slate-500">Please identify yourself to proceed with the evaluation.</p>
              </div>
              
              <div className="space-y-4">
@@ -465,7 +489,7 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({ assignees, ass
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    placeholder="e.g. S1024 or Group 1"
+                    placeholder="Enter Student ID or Group Name"
                     className="w-full text-center text-lg p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
                     autoFocus
                  />

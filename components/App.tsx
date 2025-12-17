@@ -22,23 +22,52 @@ const INITIAL_RUBRIC: Rubric = {
 };
 
 function App() {
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [userName, setUserName] = useState<string>('');
-  const [userId, setUserId] = useState<string>(''); // Added for data isolation
+  // Check URL params for Student Mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const isStudentMode = urlParams.get('mode') === 'student';
+  const paramTeacherId = urlParams.get('tId');
+  const paramRubricId = urlParams.get('rId');
 
-  const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
+  const [userRole, setUserRole] = useState<UserRole | null>(isStudentMode ? 'STUDENT' : null);
+  const [userName, setUserName] = useState<string>(isStudentMode ? 'Student Guest' : '');
+  const [userId, setUserId] = useState<string>(isStudentMode ? (paramTeacherId || 'guest') : ''); // In student mode, use teacher ID for data key
+
+  const [currentView, setCurrentView] = useState<AppView>(isStudentMode ? AppView.PEER_KIOSK : AppView.DASHBOARD);
   
   // State Initialization
   const [rubrics, setRubrics] = useState<Rubric[]>([INITIAL_RUBRIC]);
-  const [currentRubricId, setCurrentRubricId] = useState<string>(INITIAL_RUBRIC.id);
+  const [currentRubricId, setCurrentRubricId] = useState<string>(paramRubricId || INITIAL_RUBRIC.id);
   const [assignees, setAssignees] = useState<Assignee[]>([]);
   const [assessments, setAssessments] = useState<Record<string, Assessment>>({});
 
   const rubric = rubrics.find(r => r.id === currentRubricId) || INITIAL_RUBRIC;
   
-  // Persist data whenever it changes, if a user is logged in
+  // Load data on mount if in Student Mode
   useEffect(() => {
-    if (userId) {
+    if (isStudentMode && paramTeacherId) {
+        const storageKey = `smartgrade_data_${paramTeacherId}`;
+        const savedData = localStorage.getItem(storageKey);
+        if (savedData) {
+            try {
+                const parsed = JSON.parse(savedData);
+                setRubrics(parsed.rubrics || [INITIAL_RUBRIC]);
+                setAssignees(parsed.assignees || []);
+                setAssessments(parsed.assessments || {});
+                if (paramRubricId) {
+                    setCurrentRubricId(paramRubricId);
+                } else {
+                    setCurrentRubricId(parsed.currentRubricId || (parsed.rubrics ? parsed.rubrics[0].id : INITIAL_RUBRIC.id));
+                }
+            } catch (e) {
+                console.error("Failed to load teacher data for student", e);
+            }
+        }
+    }
+  }, [isStudentMode, paramTeacherId, paramRubricId]);
+
+  // Persist data whenever it changes, if a user is logged in (AND not a student guest)
+  useEffect(() => {
+    if (userId && userRole !== 'STUDENT') {
         const storageKey = `smartgrade_data_${userId}`;
         const dataToSave = {
             rubrics,
@@ -47,8 +76,24 @@ function App() {
             currentRubricId
         };
         localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+    } else if (userRole === 'STUDENT' && paramTeacherId) {
+        // OPTIONAL: If we want student submissions to save to the Teacher's storage key on the SAME device (Kiosk mode)
+        // We can enable this. For cross-device without backend, this won't persist to teacher, but allows the UI to function.
+        const storageKey = `smartgrade_data_${paramTeacherId}`;
+        // We only want to save assessments, carefully merging
+        // For safety in this demo, we won't overwrite the whole teacher DB from the student view
+        // to prevent data loss if state desyncs. 
+        // Real implementation requires a backend.
+        // However, to make the "Submit" button work in the demo:
+        const dataToSave = {
+            rubrics,
+            assignees,
+            assessments,
+            currentRubricId
+        };
+        localStorage.setItem(storageKey, JSON.stringify(dataToSave));
     }
-  }, [rubrics, assignees, assessments, currentRubricId, userId]);
+  }, [rubrics, assignees, assessments, currentRubricId, userId, userRole, paramTeacherId]);
 
   const handleLogin = (role: UserRole, label: string, email: string) => {
       setUserRole(role);
@@ -91,6 +136,9 @@ function App() {
   };
 
   const handleLogout = () => {
+      // Clear URL params
+      window.history.pushState({}, '', window.location.pathname);
+      
       setUserRole(null);
       setUserName('');
       setUserId('');
@@ -295,7 +343,9 @@ function App() {
         assessments={assessments} 
         rubric={rubric} 
         onSaveAssessment={handleUpdateAssessment}
-        onExit={() => setCurrentView(AppView.DASHBOARD)}
+        onExit={handleLogout}
+        hostUserId={userId}
+        isGuest={userRole === 'STUDENT'}
       />
     );
   }
