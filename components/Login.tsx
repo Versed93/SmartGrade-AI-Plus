@@ -199,49 +199,49 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
-      <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative min-h-[600px]">
+      <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative md:min-h-[600px]">
         
         {/* Left Side - Brand */}
-        <div className="w-full md:w-1/2 bg-gradient-to-br from-blue-600 to-purple-700 p-12 text-white flex flex-col justify-between relative overflow-hidden">
+        <div className="w-full md:w-1/2 bg-gradient-to-br from-blue-600 to-purple-700 p-6 md:p-12 text-white flex flex-col justify-between relative overflow-hidden shrink-0">
           <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
           
-          <div className="relative z-10">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 shadow-lg animate-float">
-               <Icon.Logo className="w-10 h-10 text-white" />
+          <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
+            <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4 md:mb-6 shadow-lg animate-float">
+               <Icon.Logo className="w-8 h-8 md:w-10 md:h-10 text-white" />
             </div>
-            <h1 className="text-4xl font-bold mb-4 flex items-start">
-              SmartGrade AI<span className="text-2xl text-blue-200 align-top relative -top-2">+</span>
+            <h1 className="text-2xl md:text-4xl font-bold mb-2 md:mb-4 flex items-start justify-center md:justify-start">
+              SmartGrade AI<span className="text-xl md:text-2xl text-blue-200 align-top relative -top-1 md:-top-2">+</span>
             </h1>
-            <p className="text-blue-100 text-lg leading-relaxed">
-              The intelligent grading assistant for modern educators. Streamline assessments, manage groups, and generate AI-powered feedback.
+            <p className="text-blue-100 text-sm md:text-lg leading-relaxed max-w-sm md:max-w-none mx-auto">
+              The intelligent grading assistant for modern educators. Streamline assessments and generate AI-powered feedback.
             </p>
           </div>
 
-          <div className="relative z-10 mt-12 text-sm text-blue-200">
+          <div className="relative z-10 mt-6 md:mt-12 text-xs md:text-sm text-blue-200 hidden md:block">
             <p>&copy; 2026 SmartGrade AI<span className="text-[10px] align-top relative -top-0.5">+</span></p>
             <p className="mt-1 opacity-75">Created by Versed</p>
           </div>
         </div>
 
         {/* Right Side - Dynamic Auth Flow */}
-        <div className="w-full md:w-1/2 p-12 flex flex-col justify-center bg-white relative animate-fade-in">
+        <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col justify-center bg-white relative animate-fade-in">
           
           {/* STEP 1: LANDING */}
           {step === 'LANDING' && (
             <div className="text-center animate-fade-in">
-                <h2 className="text-3xl font-bold text-slate-800 mb-1">Get Started</h2>
-                <p className="text-slate-500 mb-6">Access your intelligent grading workspace.</p>
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-1">Get Started</h2>
+                <p className="text-slate-500 mb-6 text-sm md:text-base">Access your intelligent grading workspace.</p>
                 
                 <div className="space-y-4">
                     <button 
                         onClick={() => setStep('LOGIN_ID')}
-                        className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+                        className="w-full bg-blue-600 text-white py-3 md:py-4 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
                     >
                         Sign In
                     </button>
                     <button 
                         onClick={() => setStep('REGISTER_EMAIL')}
-                        className="w-full bg-white border border-slate-200 text-slate-700 py-4 rounded-xl font-bold hover:bg-slate-50 hover:border-slate-300 transition-all"
+                        className="w-full bg-white border border-slate-200 text-slate-700 py-3 md:py-4 rounded-xl font-bold hover:bg-slate-50 hover:border-slate-300 transition-all"
                     >
                         Create Account
                     </button>
@@ -459,7 +459,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           
           {/* TEACHER PASSCODE OVERLAY */}
           {step === 'PASSCODE' && (
-              <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex items-center justify-center p-8 rounded-r-3xl animate-fade-in">
+              <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex items-center justify-center p-6 md:p-8 rounded-b-3xl md:rounded-r-3xl animate-fade-in">
                   <div className="w-full max-w-sm">
                       <div className="text-center mb-6">
                           <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">

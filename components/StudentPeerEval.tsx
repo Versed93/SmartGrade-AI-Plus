@@ -272,14 +272,14 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
     };
 
     return (
-        <div className={`rounded-2xl p-6 border border-slate-200 shadow-sm ${bgLight} transition-all`}>
-            <div className="flex justify-between items-center mb-6">
+        <div className={`rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm ${bgLight} transition-all`}>
+            <div className="flex justify-between items-center mb-4 md:mb-6">
                 <div className="flex flex-col">
-                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Score</span>
-                     <span className={`text-sm font-bold ${textColor} uppercase tracking-wide`}>{getLabel(value)}</span>
+                     <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Score</span>
+                     <span className={`text-base font-bold ${textColor} uppercase tracking-wide`}>{getLabel(value)}</span>
                 </div>
                 <div className="text-right">
-                    <span className={`text-5xl font-black ${textColor} leading-none`}>{value}</span>
+                    <span className={`text-4xl md:text-5xl font-black ${textColor} leading-none`}>{value}</span>
                     <span className="text-slate-400 text-lg font-medium">/10</span>
                 </div>
             </div>
@@ -301,7 +301,7 @@ export const StudentPeerEval: React.FC<StudentPeerEvalProps> = ({
                 />
             </div>
             
-            <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <div className="flex justify-between mt-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
                  <span>Low</span>
                  <span>High</span>
             </div>

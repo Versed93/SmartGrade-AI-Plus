@@ -301,7 +301,7 @@ function App() {
     return (
         <button
         onClick={onClick ? onClick : () => view && setCurrentView(view)}
-        className={`flex items-center gap-3 px-6 py-3 rounded-xl transition-all duration-200 w-full md:w-auto font-medium ${
+        className={`flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 rounded-xl transition-all duration-200 whitespace-nowrap font-medium text-sm md:text-base ${
             isActive 
             ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
             : 'bg-white text-slate-600 hover:bg-slate-50 hover:text-blue-600'
